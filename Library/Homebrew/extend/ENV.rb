@@ -81,6 +81,19 @@ module HomebrewEnvExtension
       end
     end
 
+    # For 10.4 we need to add system paths for /usr/X11R6 since some
+    # non-X libraries have been installed there that are normally found
+    # in /usr on 10.5 and later systems (e.g. expat)
+    if MACOS_VERSION == 10.4
+      cflags<<'-isystem'<<'/usr/X11R6/include'
+      cppflags = self['CPPFLAGS'].nil? ? [] : [self['CPPFLAGS']]
+      ldflags = self['LDFLAGS'].nil? ? [] : [self['LDFLAGS']]
+      cppflags<<'-isystem'<<'/usr/X11R6/include'
+      ldflags<<'-L/usr/X11R6/lib'
+      self['CPPFLAGS'] = "#{cppflags*' '}"
+      self['LDFLAGS'] = "#{ldflags*' '}"
+    end
+
     self['CFLAGS'] = self['CXXFLAGS'] = "#{cflags*' '} #{SAFE_CFLAGS_FLAGS}"
   end
 
@@ -126,10 +139,12 @@ module HomebrewEnvExtension
 
   def gcc_4_2
     # Sometimes you want to downgrade from LLVM to GCC 4.2
-    self['CC']="/usr/bin/gcc-4.2"
-    self['CXX']="/usr/bin/g++-4.2"
-    self['LD']=self['CC']
-    self.O3
+    if MACOS_VERSION >= 10.5
+      self['CC']="/usr/bin/gcc-4.2"
+      self['CXX']="/usr/bin/g++-4.2"
+      self['LD']=self['CC']
+      self.O3
+    end
   end
 
   def llvm
